@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vowel Sounds Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .word-container {
+            margin: 10px 0;
+        }
+        button {
+            margin-left: 10px;
+        }
+        #score {
+            font-size: 20px;
+            margin-top: 20px;
+        }
+        .comprehension {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Vowel Sounds Practice</h1>
+
+<p><strong>Passage:</strong></p>
+<p>Jane woke up early to spend the day at the lake. She packed her bag with snacks, a book, and a thick mat to sit on. The sun was hot, but the lake breeze was cool.</p>
+<p>At the lake, Jane saw a man with a big hat and a long robe walking by. He waved at her, and she waved back. She felt the soft sand under her feet and smiled. She found a spot near a tall tree, set up her mat, and opened her book.</p>
+<p>Later, Jane went for a swim. The water was cold at first, but she soon got used to it. She dove under the waves and floated for a while. The lake was calm, and the blue sky made her feel at peace.</p>
+<p>After her swim, Jane sat on her mat again and ate some grapes. As she looked at the sky, she thought, "This is the best day."</p>
+
+<h2>Identify the Vowel Sounds</h2>
+<div id="words">
+    <div class="word-container">
+        <span>man</span>
+        <button onclick="checkVowel('man', 'short')">Short</button>
+        <button onclick="checkVowel('man', 'long')">Long</button>
+    </div>
+    <div class="word-container">
+        <span>hat</span>
+        <button onclick="checkVowel('hat', 'short')">Short</button>
+        <button onclick="checkVowel('hat', 'long')">Long</button>
+    </div>
+    <div class="word-container">
+        <span>lake</span>
+        <button onclick="checkVowel('lake', 'short')">Short</button>
+        <button onclick="checkVowel('lake', 'long')">Long</button>
+    </div>
+    <div class="word-container">
+        <span>robe</span>
+        <button onclick="checkVowel('robe', 'short')">Short</button>
+        <button onclick="checkVowel('robe', 'long')">Long</button>
+    </div>
+    <div class="word-container">
+        <span>bag</span>
+        <button onclick="checkVowel('bag', 'short')">Short</button>
+        <button onclick="checkVowel('bag', 'long')">Long</button>
+    </div>
+    <div class="word-container">
+        <span>breeze</span>
+        <button onclick="checkVowel('breeze', 'short')">Short</button>
+        <button onclick="checkVowel('breeze', 'long')">Long</button>
+    </div>
+    <div class="word-container">
+        <span>mat</span>
+        <button onclick="checkVowel('mat', 'short')">Short</button>
+        <button onclick="checkVowel('mat', 'long')">Long</button>
+    </div>
+</div>
+
+<div id="score">Score: 0</div>
+
+<h2>Comprehension Questions</h2>
+<div class="comprehension">
+    <p><strong>1. What did Jane pack in her bag?</strong></p>
+    <button onclick="checkAnswer('snacks', 'snacks')">Snacks</button>
+    <button onclick="checkAnswer('clothes', 'snacks')">Clothes</button>
+    <button onclick="checkAnswer('phone', 'snacks')">Phone</button>
+
+    <p><strong>2. How did Jane feel after swimming?</strong></p>
+    <button onclick="checkAnswer('cold', 'at peace')">Cold</button>
+    <button onclick="checkAnswer('at peace', 'at peace')">At peace</button>
+    <button onclick="checkAnswer('tired', 'at peace')">Tired</button>
+</div>
+
+<script>
+    let score = 0;
+
+    const vowelSounds = {
+        'man': 'short',
+        'hat': 'short',
+        'lake': 'long',
+        'robe': 'long',
+        'bag': 'short',
+        'breeze': 'long',
+        'mat': 'short'
+    };
+
+    function checkVowel(word, answer) {
+        if (vowelSounds[word] === answer) {
+            alert('Correct!');
+            score++;
+        } else {
+            alert('Wrong!');
+        }
+        updateScore();
+    }
+
+    function updateScore() {
+        document.getElementById('score').innerText = 'Score: ' + score;
+    }
+
+    function checkAnswer(answer, correctAnswer) {
+        if (answer === correctAnswer) {
+            alert('Correct!');
+            score++;
+        } else {
+            alert('Wrong!');
+        }
+        updateScore();
+    }
+</script>
+
+</body>
+</html>
