@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Net Arena v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a1a;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.tip{position:fixed;z-index:999;background:#1a1a3e;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:.82em;line-height:1.5;color:#ccc;max-width:300px;pointer-events:none;display:none;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.tip b{color:#00f0ff}.tip em{color:#ffd700;font-style:normal}.tip code{color:#ff80ab;background:#111;padding:1px 4px;border-radius:3px;font-size:.95em}
+.header{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;background:linear-gradient(135deg,#0f0f2a,#1a1a3a);border-bottom:1px solid #333;flex-wrap:wrap;gap:8px}
+.header h1{font-size:1.2em;background:linear-gradient(90deg,#00f0ff,#ff00ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sb{display:flex;gap:10px;font-size:.85em;flex-wrap:wrap}
+.sb span{padding:3px 10px;border-radius:10px;background:#1a1a3a;border:1px solid #333}
+.p1c{color:#00f0ff}.p2c{color:#ff80ab}.rnd{color:#aaa}
+.main{max-width:1150px;margin:0 auto;padding:12px}
+.panel{background:linear-gradient(135deg,#111133,#1a1a40);border:1px solid #2a2a5a;border-radius:12px;padding:16px;margin-bottom:12px;position:relative}
+.panel h2{font-size:1.05em;color:#00f0ff;margin-bottom:6px}
+.panel p{font-size:.85em;color:#aaa;line-height:1.5}
+.nets-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.ncard{flex:1;min-width:180px;background:#111128;border:2px solid #2a2a5a;border-radius:12px;padding:12px;transition:.3s;cursor:pointer;position:relative}
+.ncard:hover{border-color:#555}
+.ncard.p1sel{border-color:#00f0ff;box-shadow:0 0 15px rgba(0,240,255,.2)}
+.ncard.p2sel{border-color:#ff80ab;box-shadow:0 0 15px rgba(255,128,171,.2)}
+.ncard.p1sel.p2sel{border-image:linear-gradient(135deg,#00f0ff,#ff80ab) 1;box-shadow:0 0 15px rgba(200,100,255,.3)}
+.ncard.winner{animation:wp 1s ease 3}
+@keyframes wp{50%{box-shadow:0 0 30px rgba(255,215,0,.4)}}
+.nhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ndot{width:12px;height:12px;border-radius:50%}
+.nid{font-weight:700;font-size:.95em;color:#ddd}
+.narch{font-family:monospace;font-size:.78em;color:#666;margin-bottom:6px}
+.nst{font-size:.78em;color:#999}.nst div{display:flex;justify-content:space-between;margin:2px 0}.nst .v{color:#fff;font-weight:600}
+.shop{background:#0d0d25;border:1px solid #2a2a5a;border-radius:10px;padding:14px;margin-bottom:12px}
+.shop h3{font-size:.95em;color:#ccc;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.shop-item{background:#12122a;border:1px solid #333;border-radius:8px;padding:10px;cursor:pointer;transition:.2s;position:relative}
+.shop-item:hover{border-color:#00f0ff;background:#151540}
+.shop-item.disabled{opacity:.35;cursor:not-allowed}
+.shop-item .si-name{font-size:.85em;font-weight:600;color:#ddd;margin-bottom:3px}
+.shop-item .si-cost{font-size:.78em;color:#ffd700}
+.shop-item .si-fx{font-size:.72em;color:#888;margin-top:3px}
+.player-tabs{display:flex;gap:8px;margin-bottom:12px}
+.ptab{padding:8px 18px;border-radius:8px;border:2px solid #333;background:#111;cursor:pointer;font-weight:700;font-size:.9em;transition:.2s}
+.ptab.active-p1{border-color:#00f0ff;color:#00f0ff;background:#0a1a2a}
+.ptab.active-p2{border-color:#ff80ab;color:#ff80ab;background:#1a0a1a}
+.bet-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:.85em;flex-wrap:wrap}
+.bet-row label{color:#aaa}
+.bet-row input[type=range]{flex:1;min-width:100px}
+.bval{font-weight:700;min-width:40px}
+.btn{padding:9px 22px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.9em;transition:.2s}
+.btn:hover{transform:scale(1.03)}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-go{background:linear-gradient(135deg,#00c853,#00e676);color:#000}
+.btn-next{background:linear-gradient(135deg,#2196f3,#42a5f5);color:#fff}
+.btn-sm{padding:5px 12px;font-size:.78em;background:#333;color:#ccc;border-radius:6px}
+canvas{width:100%;border-radius:6px}
+.chart-box{background:#0a0a1a;border:1px solid #2a2a5a;border-radius:10px;padding:12px;margin-bottom:12px}
+.chart-box h3{font-size:.88em;color:#666;margin-bottom:8px}
+.result{text-align:center;padding:14px;border-radius:10px;margin-bottom:12px;font-weight:700;animation:fi .5s}
+.result-w{background:#0d2a0d;border:1px solid #4caf50;color:#69f0ae}
+.result-l{background:#2a0d0d;border:1px solid #f44336;color:#ff8a80}
+.result-t{background:#1a1a0d;border:1px solid #ff9800;color:#ffd54f}
+@keyframes fi{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.explain{background:#0d0d2a;border:1px solid #2a2a5a;border-radius:10px;padding:14px;margin-bottom:12px}
+.explain h3{color:#00f0ff;margin-bottom:6px;font-size:.95em}
+.explain p{font-size:.82em;line-height:1.6;color:#bbb;margin-bottom:6px}
+.explain .math{background:#0a0a18;border:1px solid #333;border-radius:6px;padding:8px;font-family:monospace;font-size:.8em;color:#aaa;margin:6px 0;white-space:pre-wrap}
+.etoggle{color:#00f0ff;cursor:pointer;font-size:.8em;text-decoration:underline}
+.etoggle:hover{color:#66f0ff}
+.test-box{max-width:700px;margin:0 auto}
+.test-box h2{text-align:center;margin-bottom:16px;font-size:1.2em}
+.test-box .subtext{text-align:center;color:#888;font-size:.88em;margin-bottom:20px}
+.tq{background:#111133;border:1px solid #2a2a5a;border-radius:10px;padding:14px;margin-bottom:12px}
+.tq .qtext{font-size:.92em;margin-bottom:10px;line-height:1.5;color:#ddd}
+.tq .qnum{font-size:.75em;color:#555;margin-bottom:4px}
+.opts label{display:block;padding:8px 12px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:.85em;transition:.15s;border:1px solid transparent}
+.opts label:hover{background:#1a1a4a;border-color:#333}
+.opts input{margin-right:8px}
+.opts label.correct{background:#0d2a0d;border-color:#4caf50;color:#69f0ae}
+.opts label.incorrect{background:#2a0d0d;border-color:#f44336;color:#ff8a80}
+.opts label.missed{background:#1a1a0d;border-color:#ff9800;color:#ffd54f}
+.test-results{text-align:center;padding:20px;margin:20px 0}
+.test-results .score{font-size:2em;font-weight:700;margin:10px 0}
+.test-results .score.improved{color:#69f0ae}
+.flex-c{display:flex;gap:10px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7em;font-weight:700}
+.badge-p1{background:#0a2a3a;color:#00f0ff;border:1px solid #00f0ff}
+.badge-p2{background:#2a0a1a;color:#ff80ab;border:1px solid #ff80ab}
+.warn{font-size:.78em;color:#ff9800;margin-top:4px}
+.progress-bar{height:6px;background:#1a1a3a;border-radius:3px;margin:8px 0;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s;background:linear-gradient(90deg,#00c853,#ffd700)}
+</style>
+</head>
+<body>
+<div class="tip" id="tip"></div>
+<div class="header">
+<h1>⚡ Neural Net Arena</h1>
+<div class="sb">
+<span class="p1c" id="p1coins">P1: 💰 500</span>
+<span class="p2c" id="p2coins">P2: 💰 500</span>
+<span class="rnd" id="rndDisp">Round 1/3</span>
+</div>
+</div>
+<div class="main" id="app"></div>
+
+<script>
+// === TOOLTIP SYSTEM ===
+const tipEl=document.getElementById('tip');
+document.addEventListener('mousemove',e=>{
+  let t=e.target.closest('[data-tip]');
+  if(t){tipEl.innerHTML=t.getAttribute('data-tip');tipEl.style.display='block';
+    let x=e.clientX+12,y=e.clientY+12;
+    if(x+310>window.innerWidth)x=e.clientX-310;
+    if(y+200>window.innerHeight)y=e.clientY-tipEl.offsetHeight-12;
+    tipEl.style.left=x+'px';tipEl.style.top=y+'px';
+  } else {tipEl.style.display='none';}
+});
+
+// === NEURAL NET ENGINE ===
+class NN{
+  constructor(arch,lr,actFn='sigmoid'){
+    this.arch=arch.slice();this.lr=lr;this.actFn=actFn;
+    this.w=[];this.b=[];this.dropout=0;this.momentum=0;this.prevDw=[];this.prevDb=[];
+    this._initWeights();
+  }
+  _initWeights(){
+    this.w=[];this.b=[];this.prevDw=[];this.prevDb=[];
+    for(let i=0;i<this.arch.length-1;i++){
+      let fan=this.arch[i],fo=this.arch[i+1];
+      let sc=Math.sqrt(2/fan);
+      this.w.push(Array.from({length:fo},()=>Array.from({length:fan},()=>(Math.random()-.5)*2*sc)));
+      this.b.push(Array.from({length:fo},()=>(Math.random()-.5)*.2));
+      this.prevDw.push(Array.from({length:fo},()=>Array.from({length:fan},()=>0)));
+      this.prevDb.push(Array.from({length:fo},()=>0));
+    }
+  }
+  act(x){
+    if(this.actFn==='relu') return Math.max(0,x);
+    if(this.actFn==='tanh') return Math.tanh(x);
+    return 1/(1+Math.exp(-Math.max(-10,Math.min(10,x))));
+  }
+  actD(o){
+    if(this.actFn==='relu') return o>0?1:0;
+    if(this.actFn==='tanh') return 1-o*o;
+    return o*(1-o);
+  }
+  fwd(inp,training=false){
+    let a=[inp.slice()],c=inp.slice();
+    for(let i=0;i<this.w.length;i++){
+      let nx=[];
+      for(let j=0;j<this.w[i].length;j++){
+        let s=this.b[i][j];
+        for(let k=0;k<c.length;k++) s+=this.w[i][j][k]*c[k];
+        let v=i===this.w.length-1?1/(1+Math.exp(-Math.max(-10,Math.min(10,s)))):this.act(s);
+        if(training&&this.dropout>0&&i<this.w.length-1&&Math.random()<this.dropout) v=0;
+        nx.push(v);
+      }
+      c=nx;a.push(c);
+    }
+    return a;
+  }
+  train(inp,tgt){
+    let a=this.fwd(inp,true),d=[],o=a[a.length-1];
+    let od=o.map((v,i)=>(v-tgt[i])*v*(1-v));
+    d.unshift(od);
+    for(let l=this.w.length-2;l>=0;l--){
+      let dd=[];
+      for(let j=0;j<this.w[l].length;j++){
+        let e=0;for(let k=0;k<this.w[l+1].length;k++) e+=d[0][k]*this.w[l+1][k][j];
+        dd.push(e*this.actD(a[l+1][j]));
+      }
+      d.unshift(dd);
+    }
+    for(let l=0;l<this.w.length;l++){
+      for(let j=0;j<this.w[l].length;j++){
+        for(let k=0;k<this.w[l][j].length;k++){
+          let g=d[l][j]*a[l][k];
+          let dw=this.lr*g+this.momentum*this.prevDw[l][j][k];
+          this.w[l][j][k]-=dw;this.prevDw[l][j][k]=dw;
+        }
+        let gb=d[l][j];
+        let db=this.lr*gb+this.momentum*this.prevDb[l][j];
+        this.b[l][j]-=db;this.prevDb[l][j]=db;
+      }
+    }
+    let loss=0;for(let i=0;i<o.length;i++) loss+=(o[i]-tgt[i])**2;
+    return loss/o.length;
+  }
+  acc(data){
+    let c=0;
+    for(let d of data){
+      let o=this.fwd(d.i)[this.w.length];
+      if(d.t.length===1){if(Math.round(o[0])===d.t[0])c++;}
+      else{let pi=o.indexOf(Math.max(...o)),ti=d.t.indexOf(Math.max(...d.t));if(pi===ti)c++;}
+    }
+    return c/data.length;
+  }
+  clone(){
+    let n=new NN(this.arch,this.lr,this.actFn);
+    n.dropout=this.dropout;n.momentum=this.momentum;
+    n.w=this.w.map(l=>l.map(r=>r.slice()));
+    n.b=this.b.map(l=>l.slice());
+    n.prevDw=this.prevDw.map(l=>l.map(r=>r.slice()));
+    n.prevDb=this.prevDb.map(l=>l.slice());
+    return n;
+  }
+  addLayer(neurons){
+    let last=this.arch.length-1;
+    this.arch.splice(last,0,neurons);
+    this._initWeights();
+  }
+  addNeurons(layerIdx,count){
+    if(layerIdx>0&&layerIdx<this.arch.length-1){
+      this.arch[layerIdx]+=count;
+      this._initWeights();
+    }
+  }
+}
+
+// === CHALLENGES ===
+function makeXOR(){return[{i:[0,0],t:[0]},{i:[0,1],t:[1]},{i:[1,0],t:[1]},{i:[1,1],t:[0]}];}
+function makeLetters(){
+  const L={A:{p:[0,1,0,1,0,1,1,1,1,1,0,1,1,0,1],t:[1,0,0,0]},T:{p:[1,1,1,0,1,0,0,1,0,0,1,0,0,1,0],t:[0,1,0,0]},
+    L:{p:[1,0,0,1,0,0,1,0,0,1,0,0,1,1,1],t:[0,0,1,0]},I:{p:[1,1,1,0,1,0,0,1,0,0,1,0,1,1,1],t:[0,0,0,1]}};
+  let d=[];
+  for(let k in L){d.push({i:L[k].p,t:L[k].t});
+    for(let n=0;n<4;n++){let noisy=L[k].p.map(v=>Math.random()<.12?(v?0:1):v);d.push({i:noisy,t:L[k].t});}
+  }
+  return d;
+}
+function makeSeq(){
+  let d=[],p1=[1,0,1,0,1,0,1,0,1,0],p2=[1,1,0,1,1,0,1,1,0,1,1,0];
+  for(let i=0;i<p1.length-3;i++) d.push({i:[p1[i],p1[i+1],p1[i+2]],t:[p1[i+3]]});
+  for(let i=0;i<p2.length-3;i++) d.push({i:[p2[i],p2[i+1],p2[i+2]],t:[p2[i+3]]});
+  return d;
+}
+const CHALS=[
+  {id:'xor',name:'XOR Problem',icon:'⊕',mkData:makeXOR,inSize:2,outSize:1,epochs:500,
+    desc:'Learn XOR — outputs 1 when inputs differ. Needs non-linear separation.',
+    simpleExp:'A straight line cannot separate XOR outputs. Hidden layers bend the decision boundary to solve it.',
+    deepExp:'XOR: (0,0)→0, (0,1)→1, (1,0)→1, (1,1)→0\n\nNot linearly separable. Hidden neurons compute:\n  h = σ(Wx + b)\nThis maps inputs to a new space where a line CAN separate them.\n\nσ(x) = 1/(1+e⁻ˣ)    Loss = ½Σ(ŷ - y)²\n∂L/∂w = (ŷ-y) · σ\'(z) · x   (backprop chain rule)'},
+  {id:'letter',name:'Letter Recognition',icon:'🔤',mkData:makeLetters,inSize:15,outSize:4,epochs:400,
+    desc:'Classify 5×3 pixel letters (A, T, L, I) even with noise.',
+    simpleExp:'Each letter is 15 pixels. The net learns which patterns of pixels correspond to which letter — like learning to read!',
+    deepExp:'Input: 15-dim binary vector. Output: 4-dim one-hot.\n\nHidden neurons become feature detectors:\n  "vertical left edge" → L detector\n  "top horizontal bar" → T detector\n\nWith noisy inputs, the net must generalize:\n  minimize Σ Loss(f(x+noise), y)\n\nMore hidden neurons = more features, but risk overfitting to noise.'},
+  {id:'seq',name:'Sequence Prediction',icon:'📝',mkData:makeSeq,inSize:3,outSize:1,epochs:350,
+    desc:'Given 3 values, predict the next. Like a tiny language model!',
+    simpleExp:'The net sees a window of 3 recent values and predicts what comes next — the same idea behind text prediction and autocomplete.',
+    deepExp:'Sliding window: P(x_{t+1} | x_{t-2}, x_{t-1}, x_t)\n\nThis is the core idea behind language models!\nReal LLMs use attention:\n  Attention(Q,K,V) = softmax(QKᵀ/√d)V\n\nOur MLP uses fixed positional weights instead.\nThe tradeoff: more capacity can memorize the pattern faster, but a simpler net might generalize better to unseen sequences.'}
+];
+
+// === SHOP ITEMS ===
+const SHOP=[
+  {id:'addLayer',name:'+ Hidden Layer',cost:80,
+    tip:'<b>Add Hidden Layer</b><br>Inserts a new layer of 3 neurons before the output.<br><br><em>Why?</em> More layers = more abstraction. Each layer transforms data into a new representation.<br><br><code>depth → better feature hierarchy</code>',
+    apply:(nn)=>{nn.addLayer(3);return '+1 hidden layer (3 neurons)';}},
+  {id:'addNeurons',name:'+ 2 Neurons',cost:50,
+    tip:'<b>Add Neurons</b><br>Adds 2 neurons to the first hidden layer.<br><br><em>Why?</em> More neurons = wider representation. Can detect more features simultaneously.<br><br><code>width → more parallel features</code>',
+    apply:(nn)=>{if(nn.arch.length<3)return'No hidden layer!';nn.addNeurons(1,2);return '+2 neurons to layer 1';}},
+  {id:'lrUp',name:'↑ Learning Rate',cost:30,
+    tip:'<b>Increase Learning Rate</b><br>Makes weight updates larger (×1.5).<br><br><em>Why?</em> Faster learning, but risk overshooting the minimum.<br><br><code>lr↑ → faster but less stable</code><br>Current: bigger steps down the loss landscape.',
+    apply:(nn)=>{nn.lr*=1.5;return 'LR → '+nn.lr.toFixed(3);}},
+  {id:'lrDn',name:'↓ Learning Rate',cost:30,
+    tip:'<b>Decrease Learning Rate</b><br>Makes weight updates smaller (×0.6).<br><br><em>Why?</em> More precise convergence, but slower training.<br><br><code>lr↓ → slower but more precise</code><br>Fine-tune near the optimum.',
+    apply:(nn)=>{nn.lr*=0.6;return 'LR → '+nn.lr.toFixed(3);}},
+  {id:'relu',name:'Switch → ReLU',cost:40,
+    tip:'<b>ReLU Activation</b><br>Changes hidden activation to max(0, x).<br><br><em>Why?</em> Avoids vanishing gradient problem. Neurons either fire (positive) or don\'t (zero).<br><br><code>ReLU(x) = max(0, x)</code><br>Faster training for deep nets, but "dead neurons" can occur.',
+    apply:(nn)=>{nn.actFn='relu';nn._initWeights();return 'Activation → ReLU';}},
+  {id:'tanh',name:'Switch → Tanh',cost:40,
+    tip:'<b>Tanh Activation</b><br>Changes hidden activation to tanh(x) ∈ (-1,1).<br><br><em>Why?</em> Zero-centered output helps gradients flow. Stronger than sigmoid for hidden layers.<br><br><code>tanh(x) = (eˣ - e⁻ˣ)/(eˣ + e⁻ˣ)</code>',
+    apply:(nn)=>{nn.actFn='tanh';nn._initWeights();return 'Activation → Tanh';}},
+  {id:'sigmoid',name:'Switch → Sigmoid',cost:25,
+    tip:'<b>Sigmoid Activation</b><br>Classic σ(x) = 1/(1+e⁻ˣ) ∈ (0,1).<br><br><em>Why?</em> Smooth, bounded output. Good for output layers. Can suffer vanishing gradients in deep nets.<br><br><code>σ\'(x) = σ(x)(1 - σ(x))</code>',
+    apply:(nn)=>{nn.actFn='sigmoid';nn._initWeights();return 'Activation → Sigmoid';}},
+  {id:'dropout',name:'Toggle Dropout',cost:45,
+    tip:'<b>Dropout Regularization</b><br>Randomly zeros 20% of hidden neurons during training.<br><br><em>Why?</em> Prevents over-reliance on any single neuron. Forces redundant representations.<br><br><code>P(neuron active) = 0.8</code><br>Like training an ensemble of smaller nets!',
+    apply:(nn)=>{nn.dropout=nn.dropout>0?0:0.2;return 'Dropout → '+(nn.dropout>0?'ON 20%':'OFF');}},
+  {id:'momentum',name:'Toggle Momentum',cost:35,
+    tip:'<b>Momentum</b><br>Weight updates carry forward 90% of previous update.<br><br><em>Why?</em> Smooths noisy gradients, accelerates through flat regions, helps escape local minima.<br><br><code>Δw_t = lr·∇L + 0.9·Δw_{t-1}</code>',
+    apply:(nn)=>{nn.momentum=nn.momentum>0?0:0.9;return 'Momentum → '+(nn.momentum>0?'ON 0.9':'OFF');}},
+  {id:'reinit',name:'Reinitialize Weights',cost:20,
+    tip:'<b>Reinitialize</b><br>Randomize all weights using He initialization.<br><br><em>Why?</em> Bad initial weights can trap the net. A fresh start with the same architecture might find a better path.<br><br><code>w ~ N(0, √(2/fan_in))</code>',
+    apply:(nn)=>{nn._initWeights();return 'Weights reinitialized';}},
+];
+
+// === PRE/POST TEST QUESTIONS ===
+const TEST_QS=[
+  {q:'A neural network with no hidden layers can solve any problem.',
+    opts:['True','False'],ans:1,
+    exp:'False — without hidden layers, a net can only learn <b>linear</b> decision boundaries. Problems like XOR require non-linear separation.'},
+  {q:'What does a hidden layer allow a neural network to do?',
+    opts:['Store more data','Learn non-linear patterns','Run faster','Use less memory'],ans:1,
+    exp:'Hidden layers transform inputs into new representations, enabling <b>non-linear decision boundaries</b>.'},
+  {q:'If you increase the learning rate too much, what happens?',
+    opts:['Training gets perfectly fast','The net overshoots and may diverge','Nothing changes','Accuracy always improves'],ans:1,
+    exp:'A learning rate that\'s too high causes <b>overshooting</b> — the weights bounce around instead of converging to a minimum.'},
+  {q:'More neurons always means better performance.',
+    opts:['True','False'],ans:1,
+    exp:'False — more neurons can lead to <b>overfitting</b> (memorizing noise rather than learning patterns) and slower training.'},
+  {q:'What does backpropagation calculate?',
+    opts:['The optimal architecture','How much each weight contributed to the error','The best learning rate','Which neurons to remove'],ans:1,
+    exp:'Backprop computes <b>gradients</b> — how much each weight contributed to the loss, so we know which direction to adjust.'},
+  {q:'Dropout randomly turns off neurons during training. Why is this helpful?',
+    opts:['Saves electricity','Prevents the net from relying too heavily on any single neuron','Makes the net smaller','Increases learning rate'],ans:1,
+    exp:'Dropout forces <b>redundant representations</b> — the net can\'t rely on one neuron, so it learns more robust features.'},
+  {q:'ReLU activation outputs zero for negative inputs. What problem can this cause?',
+    opts:['Exploding gradients','Dead neurons that never activate','Too much memory usage','Slower matrix multiplication'],ans:1,
+    exp:'If a ReLU neuron gets stuck outputting 0 for all inputs, its gradient is 0 and it <b>never recovers</b> — a "dead neuron".'},
+  {q:'A net that scores 100% on training data but poorly on new data is likely:',
+    opts:['Underfitting','Overfitting','Perfectly trained','Too small'],ans:1,
+    exp:'This is classic <b>overfitting</b> — the net memorized the training data instead of learning generalizable patterns.'},
+];
+
+// === GAME STATE ===
+let G={
+  phase:'pretest', // pretest, game-setup, game-train, game-result, posttest, done
+  preAns:{},postAns:{},showTestResults:false,
+  coins:[500,500], round:0, totalRounds:3,
+  chal:null, data:null, netCount:3,
+  nets:[], // {nn, color, idx, hist:{loss[],acc[]}, p1mods:[], p2mods:[]}
+  p1bet:-1, p2bet:-1, p1amt:80, p2amt:80, maxBet:150,
+  activePlayer:0, // 0=P1, 1=P2
+  trainProg:0, trainInt:null,
+  showExp:false, showDeep:false, midChanges:[0,0]
+};
+const COLORS=['#00f0ff','#ff00ff','#ffd700','#69f0ae','#ff8a65'];
+
+function randArch(inS,outS){
+  let layers=[inS];
+  let nHidden=Math.floor(Math.random()*2)+1; // 1-2 hidden layers
+  for(let i=0;i<nHidden;i++) layers.push(Math.floor(Math.random()*5)+2);
+  layers.push(outS);
+  return layers;
+}
+function randLR(){return +((.3+Math.random()*2.2).toFixed(2));}
+
+function startNewRound(){
+  G.round++;
+  G.chal=CHALS[(G.round-1)%CHALS.length];
+  G.data=G.chal.mkData();
+  G.nets=[];
+  let nc=3;
+  for(let i=0;i<nc;i++){
+    let arch=randArch(G.chal.inSize,G.chal.outSize);
+    let lr=randLR();
+    let acts=['sigmoid','relu','tanh'][Math.floor(Math.random()*3)];
+    let nn=new NN(arch,lr,acts);
+    G.nets.push({nn,color:COLORS[i],idx:i,hist:{loss:[],acc:[]},p1mods:[],p2mods:[]});
+  }
+  G.p1bet=-1;G.p2bet=-1;G.p1amt=80;G.p2amt=80;G.maxBet=150;
+  G.activePlayer=0;G.trainProg=0;G.midChanges=[0,0];
+  G.showExp=false;G.showDeep=false;G.phase='game-setup';
+  updHdr();render();
+}
+
+function updHdr(){
+  document.getElementById('p1coins').textContent='P1: 💰 '+G.coins[0];
+  document.getElementById('p2coins').textContent='P2: 💰 '+G.coins[1];
+  document.getElementById('rndDisp').textContent=G.phase.startsWith('game')?`Round ${G.round}/${G.totalRounds}`:(G.phase==='pretest'?'Pre-Test':'Post-Test');
+}
+
+// === RENDERING ===
+function render(){
+  let app=document.getElementById('app');
+  if(G.phase==='pretest'||G.phase==='posttest') return renderTest(app);
+  if(G.phase==='done') return renderDone(app);
+  let c=G.chal;
+  let html=`<div class="panel">
+    <h2>${c.icon} ${c.name}</h2>
+    <p>${c.desc}</p>
+    <button class="btn btn-sm" style="position:absolute;top:12px;right:12px;border-radius:50%;width:28px;height:28px;padding:0" onclick="G.showExp=!G.showExp;render()">?</button>
+  </div>`;
+  if(G.showExp){
+    html+=`<div class="explain"><h3>💡 How It Works</h3><p>${c.simpleExp}</p>
+      ${G.showDeep?`<div class="math">${c.deepExp.replace(/\n/g,'<br>')}</div>`:''}
+      <span class="etoggle" onclick="G.showDeep=!G.showDeep;render()">${G.showDeep?'Hide math ▲':'Show the math ▼'}</span></div>`;
+  }
+
+  // NET CARDS
+  html+='<div class="nets-row">';
+  G.nets.forEach((n,i)=>{
+    let cls='';
+    if(G.p1bet===i) cls+=' p1sel';
+    if(G.p2bet===i) cls+=' p2sel';
+    if(G.phase==='game-result'&&i===getWinner()) cls+=' winner';
+    let la=n.hist.acc,ll=n.hist.loss;
+    let accV=la.length?Math.round(la[la.length-1]*100):0;
+    let lossV=ll.length?ll[ll.length-1].toFixed(3):'—';
+    let archStr=n.nn.arch.join('→');
+    html+=`<div class="ncard${cls}" onclick="pickNet(${i})">
+      <div class="nhead"><span class="nid" data-tip="<b>Network #${i+1}</b><br>A randomly initialized neural net. Each starts with a different architecture, learning rate, and activation function.<br><br>Click to bet on this one!">Net #${i+1}</span><span class="ndot" style="background:${n.color}"></span></div>
+      <div class="narch" data-tip="<b>Architecture: ${archStr}</b><br>Each number = neurons in that layer.<br>First = inputs, last = outputs, middle = hidden layers.<br><br><em>More layers</em> = deeper abstraction<br><em>More neurons</em> = wider representation">${archStr}</div>
+      ${renderNetSVG(n.nn.arch,n.color)}
+      <div class="nst">
+        <div data-tip="<b>Learning Rate</b><br>How big each weight update is.<br><code>w_new = w - lr × gradient</code><br><br>High → fast but unstable<br>Low → slow but precise"><span>LR</span><span class="v">${n.nn.lr.toFixed(2)}</span></div>
+        <div data-tip="<b>Activation Function</b><br>The non-linear function applied at each neuron.<br><br><em>sigmoid</em>: σ(x) = 1/(1+e⁻ˣ) → (0,1)<br><em>ReLU</em>: max(0,x) → fast but dead neurons<br><em>tanh</em>: (-1,1) → zero-centered"><span>Act</span><span class="v">${n.nn.actFn}</span></div>
+        <div data-tip="<b>Accuracy</b><br>% of training examples the net gets right.<br>100% = perfect on training data (but might be overfitting!)"><span>Acc</span><span class="v">${accV}%</span></div>
+        <div data-tip="<b>Loss</b><br>Mean squared error between prediction and target.<br><code>L = ½Σ(ŷ - y)²</code><br>Lower = better. Watch this curve during training!"><span>Loss</span><span class="v">${lossV}</span></div>
+        <div data-tip="<b>Dropout</b><br>Randomly disables neurons during training to prevent overfitting."><span>Drop</span><span class="v">${n.nn.dropout>0?'20%':'off'}</span></div>
+        <div data-tip="<b>Momentum</b><br>Carries forward previous weight updates to smooth training."><span>Mom</span><span class="v">${n.nn.momentum>0?'0.9':'off'}</span></div>
+      </div>
+      ${G.p1bet===i?'<span class="badge badge-p1">P1 bet</span>':''}
+      ${G.p2bet===i?'<span class="badge badge-p2">P2 bet</span>':''}
+      ${n.p1mods.length?'<div style="font-size:.7em;color:#00f0ff;margin-top:4px">P1: '+n.p1mods.join(', ')+'</div>':''}
+      ${n.p2mods.length?'<div style="font-size:.7em;color:#ff80ab;margin-top:4px">P2: '+n.p2mods.join(', ')+'</div>':''}
+    </div>`;
+  });
+  html+='</div>';
+
+  // PLAYER TABS + SHOP (setup only)
+  if(G.phase==='game-setup'){
+    html+=`<div class="player-tabs">
+      <div class="ptab ${G.activePlayer===0?'active-p1':''}" onclick="G.activePlayer=0;render()">⬡ Player 1 <span style="font-size:.8em;color:#ffd700">(💰${G.coins[0]})</span></div>
+      <div class="ptab ${G.activePlayer===1?'active-p2':''}" onclick="G.activePlayer=1;render()">⬢ Player 2 <span style="font-size:.8em;color:#ffd700">(💰${G.coins[1]})</span></div>
+    </div>`;
+    let ap=G.activePlayer, bet=ap===0?G.p1bet:G.p2bet, selected=bet>=0;
+    html+=`<div class="shop"><h3>🔧 Enhancement Shop ${selected?'— Upgrading Net #'+(bet+1):'— Select a net first'}</h3>`;
+    if(selected){
+      html+='<div class="shop-grid">';
+      SHOP.forEach(s=>{
+        let canAfford=G.coins[ap]>=s.cost;
+        html+=`<div class="shop-item ${canAfford&&selected?'':'disabled'}" data-tip="${s.tip}" onclick="${canAfford&&selected?`buyUpgrade(${ap},${bet},'${s.id}')`:''}">
+          <div class="si-name">${s.name}</div>
+          <div class="si-cost">${s.cost} 💰</div>
+        </div>`;
+      });
+      html+='</div>';
+    } else html+='<p style="color:#666;font-size:.85em">Click a net card above to select it, then buy upgrades.</p>';
+    html+='</div>';
+
+    // BET AMOUNT
+    let amtKey=ap===0?'p1amt':'p2amt';
+    let curAmt=G[amtKey];
+    let maxA=Math.min(G.maxBet,G.coins[ap]);
+    html+=`<div class="bet-row">
+      <label>Bet amount:</label>
+      <input type="range" min="10" max="${maxA}" step="10" value="${Math.min(curAmt,maxA)}" oninput="G.${amtKey}=+this.value;render()" style="accent-color:${ap===0?'#00f0ff':'#ff80ab'}">
+      <span class="bval" style="color:#ffd700">${Math.min(curAmt,maxA)} 💰</span>
+    </div>`;
+  }
+
+  // Training progress
+  if(G.phase==='game-train'){
+    html+=`<div class="progress-bar"><div class="progress-fill" style="width:${G.trainProg}%"></div></div>
+      <div style="text-align:center;font-size:.85em;color:#888">Training... ${G.trainProg}%</div>`;
+    if(G.midChanges[0]<2||G.midChanges[1]<2)
+      html+=`<div class="warn">You can still switch bets mid-training (max bet shrinks). P1: ${2-G.midChanges[0]} left, P2: ${2-G.midChanges[1]} left</div>`;
+  }
+
+  // Chart
+  if(G.phase!=='game-setup'){
+    html+=`<div class="chart-box"><h3 data-tip="<b>Loss Curve</b><br>Shows how each network's error decreases over training epochs.<br>Steeper drop = faster learning.<br>Flat = stuck or converged.">📈 Loss Over Epochs</h3><canvas id="lossC" width="700" height="180"></canvas></div>`;
+  }
+
+  // Buttons
+  html+='<div class="flex-c">';
+  if(G.phase==='game-setup'){
+    let ready=G.p1bet>=0&&G.p2bet>=0;
+    html+=`<button class="btn btn-go" ${ready?'':`disabled title="Both players must pick a net"`} onclick="startTrain()">🚀 Train & Race!</button>`;
+  }
+  if(G.phase==='game-result'){
+    if(G.round<G.totalRounds) html+=`<button class="btn btn-next" onclick="startNewRound()">Next Round →</button>`;
+    else html+=`<button class="btn btn-next" onclick="G.phase='posttest';G.postAns={};G.showTestResults=false;updHdr();render()">📝 Take Post-Test →</button>`;
+  }
+  html+=`<button class="btn btn-sm" onclick="resetAll()">Reset Game</button></div>`;
+
+  // RESULT
+  if(G.phase==='game-result'){
+    let w=getWinner();
+    html+=renderResult(w);
+    html+=`<div class="explain"><h3>🧠 Round Breakdown</h3>`;
+    G.nets.forEach((n,i)=>{
+      let a=n.nn.acc(G.data),l=n.hist.loss;
+      let lastL=l.length?l[l.length-1].toFixed(4):'?';
+      let tag=i===w?'🏆 WINNER':'';
+      html+=`<p><b style="color:${n.color}">Net #${i+1} ${tag}</b> — Arch: ${n.nn.arch.join('→')}, LR: ${n.nn.lr.toFixed(2)}, Act: ${n.nn.actFn}, Final Acc: ${Math.round(a*100)}%, Loss: ${lastL}</p>`;
+    });
+    html+=`<span class="etoggle" onclick="G.showDeep=!G.showDeep;render()">${G.showDeep?'Hide math ▲':'Show the math ▼'}</span>`;
+    if(G.showDeep) html+=`<div class="math">${G.chal.deepExp.replace(/\n/g,'<br>')}</div>`;
+    html+='</div>';
+  }
+
+  app.innerHTML=html;
+  if(G.phase!=='game-setup') drawChart();
+}
+
+function renderNetSVG(arch,color){
+  let W=160,H=55,pad=14,svg=`<svg width="${W}" height="${H}" style="display:block;margin:4px auto">`;
+  let lx=arch.map((_,i)=>pad+i*(W-2*pad)/(arch.length-1||1));
+  for(let l=0;l<arch.length-1;l++){
+    let n1=Math.min(arch[l],6),n2=Math.min(arch[l+1],6);
+    for(let a=0;a<n1;a++) for(let b=0;b<n2;b++){
+      let y1=pad+a*(H-2*pad)/(n1-1||1),y2=pad+b*(H-2*pad)/(n2-1||1);
+      svg+=`<line x1="${lx[l]}" y1="${y1}" x2="${lx[l+1]}" y2="${y2}" stroke="${color}" stroke-opacity=".12" stroke-width=".5"/>`;
+    }
+  }
+  for(let l=0;l<arch.length;l++){
+    let n=Math.min(arch[l],6);
+    let tipText=l===0?'Input layer: raw data enters here':l===arch.length-1?'Output layer: predictions come out here':'Hidden layer: learns abstract features';
+    for(let i=0;i<n;i++){
+      let y=pad+i*(H-2*pad)/(n-1||1);
+      svg+=`<circle cx="${lx[l]}" cy="${y}" r="4" fill="${color}" fill-opacity=".5" stroke="${color}" stroke-width=".5" data-tip="<b>Neuron</b> (Layer ${l+1}, #${i+1})<br>${tipText}<br><br><code>output = activation(Σ(w×input) + bias)</code>"/>`;
+    }
+    if(arch[l]>6) svg+=`<text x="${lx[l]}" y="${H-1}" fill="${color}" font-size="7" text-anchor="middle">+${arch[l]-6}</text>`;
+  }
+  svg+='</svg>';
+  return `<div style="cursor:pointer">${svg}</div>`;
+}
+
+function renderResult(w){
+  let p1w=G.p1bet===w, p2w=G.p2bet===w, same=G.p1bet===G.p2bet;
+  let msgs=[];
+  if(p1w) msgs.push(`P1 wins ${G.p1amt*2} 💰`);
+  else msgs.push(`P1 loses ${G.p1amt} 💰`);
+  if(p2w) msgs.push(`P2 wins ${G.p2amt*2} 💰`);
+  else msgs.push(`P2 loses ${G.p2amt} 💰`);
+  let cls=(p1w||p2w)?'result-w':'result-l';
+  return `<div class="result ${cls}">🏆 Net #${w+1} wins! — ${msgs.join(' | ')}</div>`;
+}
+
+function drawChart(){
+  let cv=document.getElementById('lossC');if(!cv)return;
+  let ctx=cv.getContext('2d'),W=cv.width=cv.offsetWidth*2,H=cv.height=360;
+  ctx.clearRect(0,0,W,H);
+  let maxLen=Math.max(...G.nets.map(n=>n.hist.loss.length),1);
+  let maxLoss=Math.max(...G.nets.flatMap(n=>n.hist.loss),.5);
+  let p={l:50,r:20,t:15,b:25},cw=W-p.l-p.r,ch=H-p.t-p.b;
+  ctx.strokeStyle='#1a1a3a';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){let y=p.t+i*ch/4;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke();
+    ctx.fillStyle='#444';ctx.font='16px monospace';ctx.fillText((maxLoss*(1-i/4)).toFixed(2),2,y+5);}
+  G.nets.forEach((n,ni)=>{
+    let h=n.hist.loss;if(h.length<2)return;
+    ctx.beginPath();ctx.strokeStyle=n.color;ctx.lineWidth=2.5;
+    h.forEach((v,i)=>{let x=p.l+i*cw/(maxLen-1||1),y=p.t+ch*(1-Math.min(v,maxLoss)/maxLoss);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+    ctx.fillStyle=n.color;ctx.font='bold 14px sans-serif';
+    let ly=p.t+ch*(1-Math.min(h[h.length-1],maxLoss)/maxLoss);
+    ctx.fillText('#'+(ni+1),p.l+3,ly-6-ni*14);
+  });
+}
+
+// === TEST RENDERING ===
+function renderTest(app){
+  let isPre=G.phase==='pretest';
+  let ans=isPre?G.preAns:G.postAns;
+  let qs=TEST_QS;
+  let html=`<div class="test-box"><h2>${isPre?'🧪 Pre-Test: What Do You Know?':'📝 Post-Test: What Did You Learn?'}</h2>
+    <p class="subtext">${isPre?'No pressure — just answer your best guess. No scores shown.':'Same questions — let\'s see if the game taught you something!'}</p>`;
+  qs.forEach((q,i)=>{
+    let picked=ans[i];
+    let showFeedback=!isPre&&picked!==undefined&&G.showTestResults;
+    html+=`<div class="tq"><div class="qnum">Q${i+1}</div><div class="qtext">${q.q}</div><div class="opts">`;
+    q.opts.forEach((o,j)=>{
+      let cls='';
+      if(showFeedback){
+        if(j===q.ans) cls='correct';
+        else if(j===picked&&j!==q.ans) cls='incorrect';
+      }
+      let checked=picked===j?'checked':'';
+      html+=`<label class="${cls}"><input type="radio" name="tq${i}" ${checked} onchange="setTestAns(${i},${j})">${o}</label>`;
+    });
+    html+='</div>';
+    if(showFeedback) html+=`<div style="font-size:.8em;color:#aaa;margin-top:6px;padding:6px;background:#0a0a18;border-radius:6px">${q.exp}</div>`;
+    html+='</div>';
+  });
+  let allAnswered=qs.every((_,i)=>ans[i]!==undefined);
+  if(isPre){
+    html+=`<div class="flex-c"><button class="btn btn-go" ${allAnswered?'':'disabled'} onclick="finishPreTest()">Start Playing! →</button></div>`;
+  } else if(!G.showTestResults){
+    html+=`<div class="flex-c"><button class="btn btn-go" ${allAnswered?'':'disabled'} onclick="showPostResults()">See Results →</button></div>`;
+  } else {
+    let preScore=calcScore(G.preAns), postScore=calcScore(G.postAns);
+    let improved=postScore>preScore;
+    html+=`<div class="test-results">
+      <div>Pre-test: <b>${preScore}/${TEST_QS.length}</b></div>
+      <div class="score ${improved?'improved':''}">Post-test: ${postScore}/${TEST_QS.length} ${improved?'📈 Improved!':postScore===preScore?'Same':'📉'}</div>
+      ${improved?'<p style="color:#69f0ae;margin-top:8px">Nice — you learned something by playing! 🎉</p>':'<p style="color:#aaa;margin-top:8px">You already knew your stuff — or the game needs more rounds! 😄</p>'}
+    </div>`;
+    html+=`<div class="flex-c"><button class="btn btn-next" onclick="resetAll()">Play Again</button></div>`;
+  }
+  html+='</div>';
+  app.innerHTML=html;
+}
+
+function renderDone(app){app.innerHTML='<div class="test-box"><h2>Thanks for playing!</h2></div>';}
+
+function calcScore(ans){let s=0;TEST_QS.forEach((q,i)=>{if(ans[i]===q.ans)s++;});return s;}
+function setTestAns(qi,oi){if(G.phase==='pretest')G.preAns[qi]=oi;else G.postAns[qi]=oi;render();}
+function finishPreTest(){startNewRound();}
+function showPostResults(){G.showTestResults=true;render();}
+
+// === GAME LOGIC ===
+function pickNet(i){
+  if(G.phase==='game-result')return;
+  let ap=G.activePlayer;
+  if(G.phase==='game-train'){
+    if(G.midChanges[ap]>=2)return;
+    let cur=ap===0?G.p1bet:G.p2bet;
+    if(cur!==i) G.midChanges[ap]++;
+  }
+  if(ap===0)G.p1bet=i; else G.p2bet=i;
+  render();
+}
+
+function buyUpgrade(player,netIdx,shopId){
+  let item=SHOP.find(s=>s.id===shopId);
+  if(!item||G.coins[player]<item.cost)return;
+  let net=G.nets[netIdx];
+  let result=item.apply(net.nn);
+  if(result.startsWith('No '))return; // failed
+  G.coins[player]-=item.cost;
+  if(player===0) net.p1mods.push(item.name);
+  else net.p2mods.push(item.name);
+  updHdr();render();
+}
+
+function getWinner(){
+  let best=-1,ba=-1;
+  G.nets.forEach((n,i)=>{
+    let a=n.nn.acc(G.data);
+    if(a>ba||(a===ba&&n.hist.loss.length&&n.hist.loss[n.hist.loss.length-1]<(best>=0&&G.nets[best].hist.loss.length?G.nets[best].hist.loss[G.nets[best].hist.loss.length-1]:999))){ba=a;best=i;}
+  });
+  return best;
+}
+
+function startTrain(){
+  if(G.p1bet<0||G.p2bet<0)return;
+  G.phase='game-train';
+  // Clone nets if both bet same
+  if(G.p1bet===G.p2bet){
+    let orig=G.nets[G.p1bet];
+    let clone={nn:orig.nn.clone(),color:'#ff8a65',idx:G.nets.length,hist:{loss:[],acc:[]},p1mods:[...orig.p1mods],p2mods:[...orig.p2mods]};
+    // Apply slight random perturbation to clone
+    clone.nn.w.forEach(l=>l.forEach(r=>{for(let k=0;k<r.length;k++)r[k]+=(Math.random()-.5)*.1;}));
+    G.nets.push(clone);
+    G.p2bet=clone.idx;
+  }
+  let totalEp=G.chal.epochs, step=0;
+  G.trainInt=setInterval(()=>{
+    for(let s=0;s<4;s++){
+      G.nets.forEach(n=>{
+        let tl=0;
+        for(let d of G.data) tl+=n.nn.train(d.i,d.t);
+        tl/=G.data.length;
+        if(step%3===0){n.hist.loss.push(tl);n.hist.acc.push(n.nn.acc(G.data));}
+      });
+      step++;
+    }
+    G.trainProg=Math.min(100,Math.round(step/totalEp*100));
+    if(G.trainProg>=25)G.maxBet=Math.min(G.maxBet,120);
+    if(G.trainProg>=50)G.maxBet=Math.min(G.maxBet,80);
+    if(G.trainProg>=75)G.maxBet=Math.min(G.maxBet,50);
+    G.p1amt=Math.min(G.p1amt,G.maxBet);
+    G.p2amt=Math.min(G.p2amt,G.maxBet);
+    if(step>=totalEp){clearInterval(G.trainInt);G.phase='game-result';resolveRound();}
+    render();
+  },50);
+}
+
+function resolveRound(){
+  let w=getWinner();
+  if(G.p1bet===w) G.coins[0]+=G.p1amt*2; else G.coins[0]-=G.p1amt;
+  if(G.p2bet===w) G.coins[1]+=G.p2amt*2; else G.coins[1]-=G.p2amt;
+  G.coins[0]=Math.max(0,G.coins[0]);G.coins[1]=Math.max(0,G.coins[1]);
+  updHdr();
+}
+
+function resetAll(){
+  if(G.trainInt)clearInterval(G.trainInt);
+  G.phase='pretest';G.coins=[500,500];G.round=0;G.preAns={};G.postAns={};G.showTestResults=false;
+  updHdr();render();
+}
+
+// === INIT ===
+updHdr();render();
+</script>
+</body>
+</html>
